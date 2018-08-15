@@ -7,6 +7,10 @@ state("NeptuniaRebirth3", "SteamCurrent")
 }
 state("NeptuniaRebirth3", "GoG")
 {
+	int SaveBlock : 0x4D7DB8;
+	string64 Cutscene : 0x4D7DB8, 0xEEC;
+	int EnemyBookSize : 0x4D7DB8, 0xB4B80;
+	int InventorySize : 0x4D7DB8, 0xC7CC;
 }
 startup
 {
@@ -31,6 +35,9 @@ startup
 	settings.SetToolTip("truerei", "End Split, times on last boss hit.");
 	
 	settings.Add("items", true, "Split when acquiring certain items");
+
+	settings.Add("c5goodend", false, "Acquire the 3 Good End items in Chapter 5", "items");
+	settings.Add("c6goodend", false, "Acquire all 5 Good End items", "items");
 	
 	settings.Add("slowrefreshonitems", false, "Slow Refresh Rate w/ Items");
 	settings.SetToolTip("slowrefreshonitems", "Slow down the refresh rate while inventory-related splits are being tested to reduce CPU usage.");
@@ -61,13 +68,12 @@ startup
 	// Chapter 1
 	settings.Add("ch1", true, "Chapter 1", "cutscenes");
 	settings.Add("Chapter 1 - To Become a CPU", false, "Complete Jellies Quest", "ch1");
-	settings.Add("Chapter 1 - Someone's There", true, "Defeat/Lose to Arfoire", "ch1");
-	settings.Add("Chapter 1 - Bad Plutia!", true, "Defeat Arfoire for real", "ch1");
+	settings.Add("Chapter 1 - Bad Plutia!", true, "Defeat Arfoire (real battle)", "ch1");
 
 	// Chapter 2
 	settings.Add("ch2", true, "Chapter 2", "cutscenes");
 	settings.Add("Chapter 2 - Carry Me, Neppy...", true, "Defeat Lizard Guard", "ch2");
-	settings.Add("Chapter 2 - I'll Crush Everyone!", true, "Complete Demon Treasure quest", "ch2");
+	settings.Add("Chapter 2 - I'll Crush Everyone!", false, "Complete Demon Treasure quest", "ch2");
 	settings.Add("Chapter 2 - Let's Go Home", true, "Defeat Copypaste", "ch2");
 
 	// Chapter 3
@@ -78,12 +84,12 @@ startup
 	// Chapter 4
 	settings.Add("ch4", true, "Chapter 4", "cutscenes");
 	settings.Add("Chapter 4 - Leanbox Was a False Alarm", true, "Complete Tank quest", "ch4");
-	settings.Add("??? TBD", true, "Defeat Vert and Nepgear", "ch4");
+	settings.Add("Chapter 4 - The Seven Sages Go Wild?!", true, "Defeat Vert and Nepgear", "ch4");
 	settings.Add("Chapter 4 - Complaining to a Hacker", true, "Defeat Copypaste and Arfoire", "ch4");
 
 	// Chapter 5
 	settings.Add("ch5", true, "Chapter 5", "cutscenes");
-	settings.Add("??? TBD", true, "Defeat Anonydeath", "ch5");
+	settings.Add("Chapter 5 - Stalling", true, "Defeat Anonydeath", "ch5");
 	settings.Add("Chapter 5 - COPYPASTE!!!!!", true, "Defeat Copypaste", "ch5");
 	settings.Add("Chapter 5 - Who's Responsible?", false, "Defeat the 3 Creatures", "ch5");
 	settings.Add("Chapter 5 - Mr. Badd Flees", true, "Defeat Mr. Badd", "ch5");
@@ -152,12 +158,12 @@ init
 	print("module size: " + modules.First().ModuleMemorySize);
 	vars.timerStartedSinceBoot = false;
 	
-	if (modules.First().ModuleMemorySize == 1) {
+	if (modules.First().ModuleMemorySize == 11243520) {
 		print("Found and confirmed GoG Version");
 		version = "GoG";
 		vars.gameConnected = true;
 	}
-	else if (modules.First().ModuleMemorySize == 2) {
+	else if (modules.First().ModuleMemorySize == 11264000) {
 		print("Found and confirmed Steam Version 05.22.2018 Patch");
 		version = "SteamCurrent";
 		vars.gameConnected = true;
@@ -186,12 +192,20 @@ update
 		vars.itemSplitsActive = 0;
 		vars.enemySplitsHit = 0;
 		vars.enemySplitsActive = 0;
+		vars.cutsceneSplitsHit = new HashSet<string>();
 		
+		vars.c5geSplit = false;
+		vars.c6geSplit = false;
+
 		vars.yhSplit = false;
 		vars.eggplantSplit = false;
 		vars.fakesSplit = false;
 		vars.goodReiSplit = false;
 		vars.trueReiSplit = false;
+
+		// count item splits
+		vars.itemSplitsActive += settings["c5goodend"] ? 1 : 0;
+		vars.itemSplitsActive += settings["c6goodend"] ? 1 : 0;
 		
 		// count enemy splits
 		vars.enemySplitsActive += settings["yellowheart"] ? 1 : 0;
@@ -221,9 +235,15 @@ split
 	if (settings["cutscenes"])
 	{
 		try {
-			if (!current.Cutscene.Equals(old.Cutscene) && settings[current.Cutscene])
+			if(!current.Cutscene.Equals(old.Cutscene)) {
+				print("Cutscene changed to: "+current.Cutscene);
+			}
+		} catch {}
+		try {
+			if (!current.Cutscene.Equals(old.Cutscene) && settings[current.Cutscene] && !vars.cutsceneSplitsHit.Contains(current.Cutscene.ToString()))
 			{
 				print("Split for " + current.Cutscene + " Cutscene.");
+				vars.cutsceneSplitsHit.Add(current.Cutscene.ToString());
 				return true;
 			}
 		} catch {}
@@ -279,33 +299,34 @@ split
 			refreshRate = 20;
 			vars.slowRefresh = true;
 		}
-		int ngNoDLCItemCount = 0;
+		int c5geItems = 0;
+		int c6geItems = 0;
 		byte[] inventory = memory.ReadBytes((System.IntPtr) (current.SaveBlock + vars.inventoryData), (int) (current.InventorySize*4));
 		for(int i = 0; i < current.InventorySize; i++) {
 			short itemID = BitConverter.ToInt16(inventory, i*4);
 			byte amount = inventory[i*4 + 2];
-			if(settings["ngnodlcitems"] && !vars.ngNoDLCItemsSplit && (itemID == 1601 || itemID == 1910) && amount >= 3) {
-				ngNoDLCItemCount++;
-				continue;
-			}
-			if(settings["ngnodlcitems"] && !vars.ngNoDLCItemsSplit && itemID == 1748 && amount >= 2) {
-				ngNoDLCItemCount++;
-				continue;
-			}
-			if(settings["mgos"] && !vars.mgosSplit && itemID == 1759 && amount >= 2) {
-				vars.mgosSplit = true;
-				vars.itemSplitsHit++;
-				print("Split for 2 MGOs");
-				return true;
+			if(itemID >= 203 && itemID <= 210 && amount > 0) {
+				c6geItems++;
+				if(itemID < 206) {
+					c5geItems++;
+				}
 			}
 		}
-		
-		if(ngNoDLCItemCount == 3 && settings["ngnodlcitems"] && !vars.ngNoDLCItemsSplit) {
-			vars.ngNoDLCItemsSplit = true;
+
+		if(settings["c5goodend"] && !vars.c5geSplit && c5geItems == 3) {
+			vars.c5geSplit = true;
 			vars.itemSplitsHit++;
-			print("Split for Ch1 NG No DLC items");
+			print("Split for Chapter 5 Good End items");
 			return true;
 		}
+
+		if(settings["c6goodend"] && !vars.c6geSplit && c6geItems == 5) {
+			vars.c6geSplit = true;
+			vars.itemSplitsHit++;
+			print("Split for All Good End items");
+			return true;
+		}
+		
 	}
 	else if(vars.slowRefresh) {
 		vars.slowRefresh = false;
