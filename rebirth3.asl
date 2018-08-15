@@ -17,10 +17,10 @@ startup
 	print("Autosplitter loading....");
 	
 	settings.Add("startnewgame", true, "Start on New Game");
-	settings.SetToolTip("startnewgame", "Start on New Game select - use timer offset 0.49");
+	settings.SetToolTip("startnewgame", "Start on New Game select - use timer offset 0.33");
 	
 	settings.Add("startngplus", false, "Start on New Game Plus");
-	settings.SetToolTip("startngplus", "Start on New Game Plus file load - use timer offset 0.41");
+	settings.SetToolTip("startngplus", "Start on New Game Plus file load - use timer offset 0.05");
 	
 	settings.Add("killenemies", true, "Kill Enemies");
 
