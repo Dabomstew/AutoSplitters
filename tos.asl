@@ -21,6 +21,7 @@ state("TOS", "TSFix")
 	int MoviePlaying: 0x7128F8;
 	int MovieFrame: 0x7128F4;
 	byte288 TechMenuRAM: 0x70DDE4;
+	byte SaveSlot: 0x182B108;
 }
 state("TOS", "SteamLatest")
 {
@@ -45,6 +46,7 @@ state("TOS", "SteamLatest")
 	int MoviePlaying: 0x7185F8;
 	int MovieFrame: 0x7185F4;
 	byte288 TechMenuRAM: 0x713AE4;
+	byte SaveSlot: 0x0;
 }
 startup
 {
@@ -76,13 +78,16 @@ startup
 	vars.splitsHit = new HashSet<string>();
 
 	settings.Add("starton", true, "Start On...");
-	settings.Add("loadfile", false, "Start on Load File", "starton");
-	settings.SetToolTip("loadfile", "Starts the timer when you load ANY file. Use for NG+ runs.");
+	settings.SetToolTip("starton", "The timer will not start if you try to start a run with dirty Tech Menu RAM (a run which would be invalid).");
 	settings.Add("openingmovie", true, "Start on OP movie (use 2 seconds timer offset)", "starton");
 	settings.SetToolTip("openingmovie", "Starts the timer when the opening movie starts playing (for NG runs). Must use 2 second timer offset to sync.");
-	settings.Add("disablestartdirty", true, "Disable Timer Start if Tech Menu RAM is dirty", "openingmovie");
-	settings.SetToolTip("disablestartdirty", "If you use this and try to start a run with dirty Tech Menu RAM, the timer will fail to start to signal to you that the run is invalid.");
-
+	settings.Add("loadanyfile", false, "Start on Load File (any slot)", "starton");
+	settings.SetToolTip("loadanyfile", "Starts the timer when you load ANY file. Use for NG+ runs.");
+	settings.Add("loadslot", false, "Start on Load File (specific slot(s))", "starton");
+	settings.SetToolTip("loadslot", "Starts the timer when you load a file slot selected under this option. Use for NG+ runs.");
+	for(int slot=0;slot<100;slot++) {
+		settings.Add("loadslot"+slot, false, "Slot "+(slot+1), "loadslot");
+	}
 	
 	settings.Add("storybosses", true, "Story Bosses");
 	settings.Add("vidarr", true, "Vidarr", "storybosses");
@@ -268,15 +273,23 @@ split
 }
 
 start {
-	if(settings["loadfile"] && current.LoadActive == 0x02 && current.LoadOrSave == 0x01) {
-		return true;
+	var starting = false;
+
+	if(settings["loadanyfile"] && current.LoadActive == 0x02 && current.LoadOrSave == 0x01) {
+		starting = true;
 	}
-	if(settings["openingmovie"] && current.MoviePlaying == 0x01 && old.MovieFrame < current.MovieFrame && current.MovieFrame < 10) {
-		if(settings["disablestartdirty"]) {
-			for(int i=0;i<288;i++) {
-				if(current.TechMenuRAM[i] != 0) {
-					return false;
-				}
+	else if(settings["loadslot"] && current.LoadActive == 0x02 && current.LoadOrSave == 0x01 && settings["loadslot"+current.SaveSlot]) {
+		starting = true;
+	}
+	else if(settings["openingmovie"] && current.MoviePlaying == 0x01 && old.MovieFrame < current.MovieFrame && current.MovieFrame < 10) {
+		starting = true;
+	}
+	
+
+	if(starting) {
+		for(int i=0;i<288;i++) {
+			if(current.TechMenuRAM[i] != 0) {
+				return false;
 			}
 		}
 		return true;
