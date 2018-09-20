@@ -46,7 +46,7 @@ state("TOS", "SteamLatest")
 	int MoviePlaying: 0x7185F8;
 	int MovieFrame: 0x7185F4;
 	byte288 TechMenuRAM: 0x713AE4;
-	byte SaveSlot: 0x0;
+	byte SaveSlot: 0x4C6454;
 }
 startup
 {
@@ -56,6 +56,7 @@ startup
 	// 2+ enemies: mode, n, LV, HP, LV, HP, ...
 	// 1 = kill, 2 = die to, 3 = either
 	vars.splits = new List<Tuple<string, List<int>>> {
+		// Bosses
 		Tuple.Create("vidarr", new List<int> { 1, 1, 5, 4000, 30, 210, 21, 8}),
 		Tuple.Create("exbelua", new List<int> { 1, 1, 5, 5000, 38, 190, 10, 43}),
 		Tuple.Create("botta", new List<int> { 1, 3, 10, 4200, 7, 823, 7, 823}),
@@ -73,6 +74,28 @@ startup
 		Tuple.Create("remiel", new List<int> { 1, 1, 28, 16000, 258, 530, 112, 155}),
 		Tuple.Create("kratos1", new List<int> { 3, 1, 30, 22500, 1500, 750, 150, 180}),
 		Tuple.Create("yggy1", new List<int> { 2, 1, 60, 40000, 3000, 1800, 350, 320}),
+
+		// Scrubs
+		Tuple.Create("tutorial1", new List<int> { 1, 1, 1, 800, 0, 130, 0, 32}),
+		Tuple.Create("tutorial2", new List<int> { 1, 2, 4, 320, 1, 800}),
+		Tuple.Create("templerenegades", new List<int> { 1, 2, 3, 600, 3, 600}),
+		Tuple.Create("golem1", new List<int> { 1, 1, 6, 1210, 0, 150, 12, 35}),
+		Tuple.Create("golem2", new List<int> { 1, 1, 6, 1210, 0, 150, 12, 35}),
+		Tuple.Create("golem3", new List<int> { 1, 1, 6, 1210, 0, 150, 12, 35}),
+		Tuple.Create("iranchdesians", new List<int> { 1, 2, 5, 570, 5, 570}),
+		Tuple.Create("trietdesians", new List<int> { 1, 3, 7, 700, 7, 700, 8, 830}),
+		Tuple.Create("sylbaserenegades", new List<int> { 1, 2, 3, 600, 3, 600}),
+		Tuple.Create("firesealscrubs", new List<int> { 1, 2, 8, 380, 8, 380}),
+		Tuple.Create("asgardranch1", new List<int> { 1, 3, 17, 800, 17, 800, 17, 1600}),
+		Tuple.Create("asgardranch2", new List<int> { 1, 4, 17, 1980, 18, 1990, 18, 1990, 18, 1710}),
+		Tuple.Create("asgardranch3", new List<int> { 1, 2, 18, 1710, 18, 1710}),
+		Tuple.Create("asgardranch4", new List<int> { 1, 2, 18, 1710, 18, 1710}),
+		Tuple.Create("asgardranch5", new List<int> { 1, 2, 18, 2500, 18, 2500}),
+		Tuple.Create("asgardranch6", new List<int> { 1, 2, 18, 2500, 18, 2500}),
+		Tuple.Create("palmadesians", new List<int> { 1, 3, 7, 700, 7, 700, 10, 1250}),
+		Tuple.Create("palmaranch1", new List<int> { 1, 3, 12, 1380, 14, 1480, 14, 1400}),
+		Tuple.Create("palmaranch2", new List<int> { 1, 4, 12, 1380, 12, 1380, 14, 1480, 14, 1400}),
+		Tuple.Create("palmaranch3", new List<int> { 1, 4, 12, 1380, 14, 1480, 14, 1480, 14, 1400}),
 	};
 
 	vars.splitsHit = new HashSet<string>();
@@ -107,6 +130,28 @@ startup
 	settings.Add("remiel", true, "Remiel", "storybosses");
 	settings.Add("kratos1", true, "Kratos 1 (win or lose)", "storybosses");
 	settings.Add("yggy1", true, "Yggdrasill 1 (lose)", "storybosses");
+
+	settings.Add("scrubfights", false, "Scrub Fights");
+	settings.Add("tutorial1", true, "Tutorial 1", "scrubfights");
+	settings.Add("tutorial2", true, "Tutorial 2", "scrubfights");
+	settings.Add("templerenegades", true, "Martel Temple Renegades", "scrubfights");
+	settings.Add("golem1", true, "Martel Temple Golem 1", "scrubfights");
+	settings.Add("golem2", true, "Martel Temple Golem 2", "scrubfights");
+	settings.Add("golem3", true, "Martel Temple Golem 3", "scrubfights");
+	settings.Add("iranchdesians", true, "Iselia Ranch Desians", "scrubfights");
+	settings.Add("trietdesians", true, "Triet Desians", "scrubfights");
+	settings.Add("sylbaserenegades", true, "Sylvarant Base Renegades", "scrubfights");
+	settings.Add("firesealscrubs", true, "Fire Seal Elemental Scrubs", "scrubfights");
+	settings.Add("asgardranch1", true, "Asgard Ranch 1 (first visit)", "scrubfights");
+	settings.Add("asgardranch2", true, "Asgard Ranch 2 (second visit intro)", "scrubfights");
+	settings.Add("asgardranch3", true, "Asgard Ranch 3 (B-Team fight 1)", "scrubfights");
+	settings.Add("asgardranch4", true, "Asgard Ranch 4 (B-Team fight 2)", "scrubfights");
+	settings.Add("asgardranch5", true, "Asgard Ranch 5 (B-Team fight 3)", "scrubfights");
+	settings.Add("asgardranch6", true, "Asgard Ranch 6 (B-Team fight 4)", "scrubfights");
+	settings.Add("palmadesians", true, "Palmacosta Desians", "scrubfights");
+	settings.Add("palmaranch1", true, "Palma Ranch 1 (Purple Card)", "scrubfights");
+	settings.Add("palmaranch2", true, "Palma Ranch 2 (Chocolat)", "scrubfights");
+	settings.Add("palmaranch3", true, "Palma Ranch 3 (Pre-Magnius)", "scrubfights");
 	
 	vars.gameConnected = false;
 	vars.timerJustStarted = false;
