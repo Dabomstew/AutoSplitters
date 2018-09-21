@@ -74,7 +74,15 @@ startup
 		Tuple.Create("remiel", new List<int> { 1, 1, 28, 16000, 258, 530, 112, 155}),
 		Tuple.Create("kratos1", new List<int> { 3, 1, 30, 22500, 1500, 750, 150, 180}),
 		Tuple.Create("yggy1", new List<int> { 2, 1, 60, 40000, 3000, 1800, 350, 320}),
-
+		Tuple.Create("pronyma1", new List<int> { 1, 1, 30, 18000, 750, 1150, 150, 180}),
+		Tuple.Create("convicts", new List<int> { 1, 3, 28, 6300, 28, 6300, 28, 6300}),
+		Tuple.Create("regal", new List<int> { 1, 1, 30, 12000, 320, 800, 120, 95}),
+		Tuple.Create("minedoor", new List<int> { 1, 8, 30, 12000, 30, 8000, 30, 8000, 30, 8000, 30, 8000, 30, 5500, 30, 3000, 30, 3000}),
+		Tuple.Create("volt", new List<int> { 1, 1, 35, 24000, 240, 950, 180, 200}),
+		Tuple.Create("yuanbotta", new List<int> { 1, 2, 38, 16000, 36, 12000}),
+		Tuple.Create("dragons", new List<int> { 1, 3, 37, 18000, 36, 12000, 36, 12000}),
+		Tuple.Create("gnome", new List<int> { 1, 1, 40, 28000, 682, 1100, 255, 279}),
+  
 		// Scrubs
 		Tuple.Create("tutorial1", new List<int> { 1, 1, 1, 800, 0, 130, 0, 32}),
 		Tuple.Create("tutorial2", new List<int> { 1, 2, 4, 320, 1, 800}),
@@ -96,6 +104,12 @@ startup
 		Tuple.Create("palmaranch1", new List<int> { 1, 3, 12, 1380, 14, 1480, 14, 1400}),
 		Tuple.Create("palmaranch2", new List<int> { 1, 4, 12, 1380, 12, 1380, 14, 1480, 14, 1400}),
 		Tuple.Create("palmaranch3", new List<int> { 1, 4, 12, 1380, 14, 1480, 14, 1480, 14, 1400}),
+		Tuple.Create("bridgepapals", new List<int> { 1, 3, 24, 4900, 24, 4900, 24, 4900}),
+		Tuple.Create("forestpapals", new List<int> { 1, 3, 30, 5100, 30, 5100, 30, 5100}),
+		Tuple.Create("ozettepapals", new List<int> { 1, 3, 35, 6900, 33, 6400, 33, 6400}),
+		Tuple.Create("tethebase1", new List<int> {1, 3, 35, 3800, 35, 3800, 36, 4800}),
+		Tuple.Create("tethebase2", new List<int> {1, 3, 35, 2900, 35, 2900, 36, 4800}),
+		Tuple.Create("tethebase3", new List<int> {1, 3, 35, 5000, 35, 5000, 36, 4800}), 
 	};
 
 	vars.splitsHit = new HashSet<string>();
@@ -130,6 +144,14 @@ startup
 	settings.Add("remiel", true, "Remiel", "storybosses");
 	settings.Add("kratos1", true, "Kratos 1 (win or lose)", "storybosses");
 	settings.Add("yggy1", true, "Yggdrasill 1 (lose)", "storybosses");
+	settings.Add("pronyma1", true, "Pronyma 1", "storybosses");
+	settings.Add("convicts", true, "Convicts (Sewers)", "storybosses");
+	settings.Add("regal", true, "Regal", "storybosses");
+	settings.Add("minedoor", true, "Mine Door", "storybosses");
+	settings.Add("volt", true, "Volt", "storybosses");
+	settings.Add("yuanbotta", true, "Yuan & Botta", "storybosses");
+	settings.Add("dragons", true, "Dragons (Nest)", "storybosses");
+	settings.Add("gnome", true, "Gnome", "storybosses");
 
 	settings.Add("scrubfights", false, "Scrub Fights");
 	settings.Add("tutorial1", true, "Tutorial 1", "scrubfights");
@@ -152,6 +174,12 @@ startup
 	settings.Add("palmaranch1", true, "Palma Ranch 1 (Purple Card)", "scrubfights");
 	settings.Add("palmaranch2", true, "Palma Ranch 2 (Chocolat)", "scrubfights");
 	settings.Add("palmaranch3", true, "Palma Ranch 3 (Pre-Magnius)", "scrubfights");
+	settings.Add("bridgepapals", true, "Papal Knights (Tethealla Bridge)", "scrubfights");
+	settings.Add("forestpapals", true, "Papal Knights (Gaoracchia Forest)", "scrubfights");
+	settings.Add("ozettepapals", true, "Papal Knights (Ozette)", "scrubfights");
+	settings.Add("tethebase1", true, "Tethealla Base Password 1", "scrubfights");
+	settings.Add("tethebase2", true, "Tethealla Base Password 2", "scrubfights");
+	settings.Add("tethebase3", true, "Tethealla Base Password 3", "scrubfights");
 	
 	vars.gameConnected = false;
 	vars.timerJustStarted = false;
@@ -260,6 +288,9 @@ split
 					battleData["enemy"+enemy+"ACC"] = memory.ReadValue<ushort>(enemyPointer + 0x34);
 					battleData["enemy"+enemy+"EVA"] = memory.ReadValue<ushort>(enemyPointer + 0x36);
 					battleData["enemy"+enemy+"LUK"] = memory.ReadValue<byte>(enemyPointer + 0x38);
+					System.IntPtr enemyPointer2 = (System.IntPtr) memory.ReadValue<int>((System.IntPtr) (current.BattleData + 0x62240 + 0x13BE0*(enemy-1)));
+					battleData["enemy"+enemy+"EXP"] = memory.ReadValue<int>(enemyPointer2 + 0x70);
+					battleData["enemy"+enemy+"Gald"] = memory.ReadValue<int>(enemyPointer2 + 0x74);
 				}
 				var battleInfoStr = "";
 				foreach(KeyValuePair<string,int> data in battleData) {
