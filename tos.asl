@@ -4,11 +4,16 @@ state("TOS", "TSFix")
 	byte PlayerPartyCount: 0x6CD1DC, 0x934C;
 	byte EnemyPartyCount: 0x6CD1DC, 0x934D;
 	int BattleTimer: 0x6CD1DC, 0x90E4;
+	int BattleTimerFull: 0x6CD1DC, 0x90E0;
+	byte BattleFadingOut: 0x6CD1DC, 0x93B3;
 	int Player1HP: 0x6CD1DC, 0x132A8, 0x24;
 	int Player2HP: 0x6CD1DC, 0x26E88, 0x24;
 	int Player3HP: 0x6CD1DC, 0x3AA68, 0x24;
 	int Player4HP: 0x6CD1DC, 0x4E648, 0x24;
+	byte Enemy1Level: 0x6CD1DC, 0x62228, 0x1D;
+	int Enemy1MaxHP: 0x6CD1DC, 0x62228, 0x20;
 	int Enemy1HP: 0x6CD1DC, 0x62228, 0x24;
+	ushort Enemy1Def: 0x6CD1DC, 0x62228, 0x30;
 	int Enemy2HP: 0x6CD1DC, 0x75E08, 0x24;
 	int Enemy3HP: 0x6CD1DC, 0x899E8, 0x24;
 	int Enemy4HP: 0x6CD1DC, 0x9D5C8, 0x24;
@@ -29,11 +34,16 @@ state("TOS", "SteamLatest")
 	byte PlayerPartyCount: 0x6D2EDC, 0x934C;
 	byte EnemyPartyCount: 0x6D2EDC, 0x934D;
 	int BattleTimer: 0x6D2EDC, 0x90E4;
+	int BattleTimerFull: 0x6D2EDC, 0x90E0;
+	byte BattleFadingOut: 0x6D2EDC, 0x93B3;
 	int Player1HP: 0x6D2EDC, 0x132A8, 0x24;
 	int Player2HP: 0x6D2EDC, 0x26E88, 0x24;
 	int Player3HP: 0x6D2EDC, 0x3AA68, 0x24;
 	int Player4HP: 0x6D2EDC, 0x4E648, 0x24;
+	byte Enemy1Level: 0x6D2EDC, 0x62228, 0x1D;
+	int Enemy1MaxHP: 0x6D2EDC, 0x62228, 0x20;
 	int Enemy1HP: 0x6D2EDC, 0x62228, 0x24;
+	ushort Enemy1Def: 0x6D2EDC, 0x62228, 0x30;
 	int Enemy2HP: 0x6D2EDC, 0x75E08, 0x24;
 	int Enemy3HP: 0x6D2EDC, 0x899E8, 0x24;
 	int Enemy4HP: 0x6D2EDC, 0x9D5C8, 0x24;
@@ -73,7 +83,6 @@ startup
 		Tuple.Create("undine", new List<int> { 1, 1, 25, 13000, 320, 580, 88, 180}),
 		Tuple.Create("remiel", new List<int> { 1, 1, 28, 16000, 258, 530, 112, 155}),
 		Tuple.Create("kratos1", new List<int> { 3, 1, 30, 22500, 1500, 750, 150, 180}),
-		Tuple.Create("yggy1", new List<int> { 2, 1, 60, 40000, 3000, 1800, 350, 320}),
 		Tuple.Create("pronyma1", new List<int> { 1, 1, 30, 18000, 750, 1150, 150, 180}),
 		Tuple.Create("convicts", new List<int> { 1, 3, 28, 6300, 28, 6300, 28, 6300}),
 		Tuple.Create("regal", new List<int> { 1, 1, 30, 12000, 320, 800, 120, 95}),
@@ -82,6 +91,24 @@ startup
 		Tuple.Create("yuanbotta", new List<int> { 1, 2, 38, 16000, 36, 12000}),
 		Tuple.Create("dragons", new List<int> { 1, 3, 37, 18000, 36, 12000, 36, 12000}),
 		Tuple.Create("gnome", new List<int> { 1, 1, 40, 28000, 682, 1100, 255, 279}),
+		Tuple.Create("celsius", new List<int> { 1, 2, 45, 18000, 42, 12000}),
+		Tuple.Create("latesylph", new List<int> {1, 3, 49, 13000, 48, 12000, 47, 10000}),
+		Tuple.Create("rodyle", new List<int> { 1, 1, 44, 35000, 500, 1350, 210, 240}),
+		Tuple.Create("colosseum", new List<int> {1, 3, 50, 5230, 50, 5230, 28, 1980}),
+		Tuple.Create("shadow", new List<int> { 1, 1, 48, 30000, 800, 1520, 232, 231}),
+		Tuple.Create("lateefreet", new List<int> { 1, 1, 47, 30000, 850, 1200, 260, 210}),
+		Tuple.Create("lunaaska", new List<int> { 1, 2, 50, 18000, 50, 19650}),
+		Tuple.Create("forcystus", new List<int> {1, 3, 50, 20000, 50, 6000, 50, 6000}),
+		Tuple.Create("plantix", new List<int> { 1, 1, 52, 36000, 250, 1300, 310, 100}),
+		Tuple.Create("kratos2", new List<int> { 3, 1, 62, 25000, 980, 1200, 400, 320}),
+		Tuple.Create("gatekeeper", new List<int> {1, 3, 60, 18000, 58, 7480, 58, 7480}),
+		Tuple.Create("pronyma2", new List<int> {1, 3, 60, 32000, 58, 11000, 58, 11000}),
+		Tuple.Create("yggy3", new List<int> { 1, 1, 60, 40000, 3000, 1800, 380, 320}),
+		Tuple.Create("kratos3", new List<int> { 1, 1, 62, 12000, 1400, 1050, 320, 265}),
+		Tuple.Create("origin", new List<int> { 1, 1, 65, 40000, 800, 1450, 350, 250}),
+		Tuple.Create("darkdragon", new List<int> { 1, 1, 71, 19000, 0, 1250, 48, 420}),
+		Tuple.Create("mithos1", new List<int> { 1, 1, 66, 55000, 5000, 2000, 410, 300}),
+		Tuple.Create("mithos2", new List<int> { 1, 1, 66, 60000, 1500, 2150, 265, 300}),
   
 		// Scrubs
 		Tuple.Create("tutorial1", new List<int> { 1, 1, 1, 800, 0, 130, 0, 32}),
@@ -90,7 +117,7 @@ startup
 		Tuple.Create("golem1", new List<int> { 1, 1, 6, 1210, 0, 150, 12, 35}),
 		Tuple.Create("golem2", new List<int> { 1, 1, 6, 1210, 0, 150, 12, 35}),
 		Tuple.Create("golem3", new List<int> { 1, 1, 6, 1210, 0, 150, 12, 35}),
-		Tuple.Create("iranchdesians", new List<int> { 1, 2, 5, 570, 5, 570}),
+		Tuple.Create("outsideiranch", new List<int> { 1, 2, 5, 570, 5, 570}),
 		Tuple.Create("trietdesians", new List<int> { 1, 3, 7, 700, 7, 700, 8, 830}),
 		Tuple.Create("sylbaserenegades", new List<int> { 1, 2, 3, 600, 3, 600}),
 		Tuple.Create("firesealscrubs", new List<int> { 1, 2, 8, 380, 8, 380}),
@@ -109,7 +136,15 @@ startup
 		Tuple.Create("ozettepapals", new List<int> { 1, 3, 35, 6900, 33, 6400, 33, 6400}),
 		Tuple.Create("tethebase1", new List<int> {1, 3, 35, 3800, 35, 3800, 36, 4800}),
 		Tuple.Create("tethebase2", new List<int> {1, 3, 35, 2900, 35, 2900, 36, 4800}),
-		Tuple.Create("tethebase3", new List<int> {1, 3, 35, 5000, 35, 5000, 36, 4800}), 
+		Tuple.Create("tethebase3", new List<int> {1, 3, 35, 5000, 35, 5000, 36, 4800}),
+		Tuple.Create("penguinists", new List<int> { 1, 4, 38, 3680, 38, 3680, 38, 3680, 38, 3680}),
+		Tuple.Create("gatepapals", new List<int> {1, 3, 45, 9400, 40, 7900, 40, 7900}),
+		Tuple.Create("rodyledragons", new List<int> {1, 3, 44, 8000, 44, 8000, 44, 8000}),
+		Tuple.Create("iseliaranch", new List<int> { 1, 4, 49, 4850, 49, 4850, 51, 4800, 49, 4350}),
+		Tuple.Create("altessaangels", new List<int> {1, 3, 58, 7480, 58, 7480, 60, 8130}),
+		Tuple.Create("tosangels", new List<int> {1, 2, 58, 7480, 58, 7480}),
+		Tuple.Create("tosplants1", new List<int> {1, 2, 57, 7200, 57, 7200}),
+		Tuple.Create("tosplants2", new List<int> {1, 2, 57, 7200, 57, 7200}),
 	};
 
 	vars.splitsHit = new HashSet<string>();
@@ -152,6 +187,25 @@ startup
 	settings.Add("yuanbotta", true, "Yuan & Botta", "storybosses");
 	settings.Add("dragons", true, "Dragons (Nest)", "storybosses");
 	settings.Add("gnome", true, "Gnome", "storybosses");
+	settings.Add("celsius", true, "Celsius & Fenrir", "storybosses");
+	settings.Add("latesylph", true, "Sylph (Non-Early)", "storybosses");
+	settings.Add("rodyle", true, "Rodyle", "storybosses");
+	settings.Add("colosseum", true, "Colosseum 1v3", "storybosses");
+	settings.Add("shadow", true, "Shadow", "storybosses");
+	settings.Add("lateefreet", true, "Efreet (Non-Early)", "storybosses");
+	settings.Add("lunaaska", true, "Luna & Aska", "storybosses");
+	settings.Add("forcystus", true, "Forcystus (& Exbones)", "storybosses");
+	settings.Add("plantix", true, "Plantix", "storybosses");
+	settings.Add("kratos2", true, "Kratos 2 (win or lose)", "storybosses");
+	settings.Add("yggy2", true, "Yggdrasill 2 (1 min or 20k damage)", "storybosses");
+	settings.Add("gatekeeper", true, "Gatekeeper", "storybosses");
+	settings.Add("pronyma2", true, "Pronyma 2 (& Iduns)", "storybosses");
+	settings.Add("yggy3", true, "Yggdrasill 3 (win)", "storybosses");
+	settings.Add("kratos3", true, "Kratos 3 (win)", "storybosses");
+	settings.Add("origin", true, "Origin", "storybosses");
+	settings.Add("darkdragon", true, "Dark Dragon", "storybosses");
+	settings.Add("mithos1", true, "Mithos 1", "storybosses");
+	settings.Add("mithos2", true, "Mithos 2", "storybosses");
 
 	settings.Add("scrubfights", false, "Scrub Fights");
 	settings.Add("tutorial1", true, "Tutorial 1", "scrubfights");
@@ -160,7 +214,7 @@ startup
 	settings.Add("golem1", true, "Martel Temple Golem 1", "scrubfights");
 	settings.Add("golem2", true, "Martel Temple Golem 2", "scrubfights");
 	settings.Add("golem3", true, "Martel Temple Golem 3", "scrubfights");
-	settings.Add("iranchdesians", true, "Iselia Ranch Desians", "scrubfights");
+	settings.Add("outsideiranch", true, "Outside Iselia Ranch Desians", "scrubfights");
 	settings.Add("trietdesians", true, "Triet Desians", "scrubfights");
 	settings.Add("sylbaserenegades", true, "Sylvarant Base Renegades", "scrubfights");
 	settings.Add("firesealscrubs", true, "Fire Seal Elemental Scrubs", "scrubfights");
@@ -180,6 +234,15 @@ startup
 	settings.Add("tethebase1", true, "Tethealla Base Password 1", "scrubfights");
 	settings.Add("tethebase2", true, "Tethealla Base Password 2", "scrubfights");
 	settings.Add("tethebase3", true, "Tethealla Base Password 3", "scrubfights");
+	settings.Add("penguinists", true, "Penguinists (only if you kill them)", "scrubfights");
+	settings.Add("gatepapals", true, "Papal Knights (Otherworldly Gate)", "scrubfights");
+	settings.Add("rodyledragons", true, "Baby Dragons (after Rodyle)", "scrubfights");
+	settings.Add("iseliaranch", true, "Iselia Ranch Scrubs (inside)", "scrubfights");
+	settings.Add("altessaangels", true, "Angels (Night at Altessa's)", "scrubfights");
+	settings.Add("tosangels", true, "Tower of Salvation Angels (Regal's Trap)", "scrubfights");
+	settings.Add("tosplants1", true, "Tower of Salvation Plants 1 (Raine's Trap)", "scrubfights");
+	settings.Add("tosplants2", true, "Tower of Salvation Plants 2 (Raine's Trap)", "scrubfights");
+
 	
 	vars.gameConnected = false;
 	vars.timerJustStarted = false;
@@ -208,7 +271,6 @@ init
 
 	print("Game found!");
 	print("module size: " + modules.First().ModuleMemorySize);
-	vars.timerStartedSinceBoot = false;
 	
 	if (modules.First().ModuleMemorySize == 45060096) {
 		print("Found and confirmed TSFix");
@@ -228,7 +290,6 @@ init
 exit
 {
 	vars.gameConnected = false;
-	vars.timerStartedSinceBoot = false;
 	vars.processedCurrentFight = false;
 }
 update
@@ -254,8 +315,32 @@ split
 	try {
 		// are we in a battle?
 		if(current.PlayerPartyCount > 0 && current.PlayerPartyCount < 5 && current.EnemyPartyCount > 0 && current.EnemyPartyCount < 9 && current.BattleTimer > 0 && current.BattleTimer < 21600000) {
+			var allDead = current.Player1HP == 0 && current.Player2HP == 0 && current.Player3HP == 0 && current.Player4HP == 0;
+			// yggdrasill unwinnable fight mode?
+			if((settings["yggy1"] || settings["yggy2"]) && !vars.processedCurrentFight && current.EnemyPartyCount == 1 && current.Enemy1Level == 60 && current.Enemy1MaxHP == 40000 && current.Enemy1Def == 350) {
+				// yggy 1 or 2 being fought
+				if(settings["yggy1"] && !vars.splitsHit.contains("yggy1") && allDead) {
+					// end of yggy 1 by party wipe
+					vars.splitsHit.Add("yggy1");
+					vars.processedCurrentFight = true;
+					return true;
+				}
+				else if(current.BattleFadingOut & 0x20 != 0x00) {
+					// Timeout or damage amount hit, can be either fight
+					if(settings["yggy1"] && !vars.splitsHit.contains("yggy1")) {
+						vars.splitsHit.Add("yggy1");
+						vars.processedCurrentFight = true;
+						return true;
+					}
+					else if(settings["yggy2"] && !vars.splitsHit.contains("yggy2")) {
+						vars.splitsHit.Add("yggy2");
+						vars.processedCurrentFight = true;
+						return true;
+					}
+				}
+			}
 			int mode = 0;
-			if(current.Player1HP == 0 && current.Player2HP == 0 && current.Player3HP == 0 && current.Player4HP == 0) {
+			if(allDead) {
 				mode = 2;
 			}
 			else {
