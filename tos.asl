@@ -319,7 +319,7 @@ split
 			// yggdrasill unwinnable fight mode?
 			if((settings["yggy1"] || settings["yggy2"]) && !vars.processedCurrentFight && current.EnemyPartyCount == 1 && current.Enemy1Level == 60 && current.Enemy1MaxHP == 40000 && current.Enemy1Def == 350) {
 				// yggy 1 or 2 being fought
-				if(settings["yggy1"] && !vars.splitsHit.contains("yggy1") && allDead) {
+				if(settings["yggy1"] && !vars.splitsHit.Contains("yggy1") && allDead) {
 					// end of yggy 1 by party wipe
 					vars.splitsHit.Add("yggy1");
 					vars.processedCurrentFight = true;
@@ -327,12 +327,12 @@ split
 				}
 				else if(current.BattleFadingOut & 0x20 != 0x00) {
 					// Timeout or damage amount hit, can be either fight
-					if(settings["yggy1"] && !vars.splitsHit.contains("yggy1")) {
+					if(settings["yggy1"] && !vars.splitsHit.Contains("yggy1")) {
 						vars.splitsHit.Add("yggy1");
 						vars.processedCurrentFight = true;
 						return true;
 					}
-					else if(settings["yggy2"] && !vars.splitsHit.contains("yggy2")) {
+					else if(settings["yggy2"] && !vars.splitsHit.Contains("yggy2")) {
 						vars.splitsHit.Add("yggy2");
 						vars.processedCurrentFight = true;
 						return true;
