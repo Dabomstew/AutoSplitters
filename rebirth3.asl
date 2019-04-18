@@ -7,10 +7,10 @@ state("NeptuniaRebirth3", "SteamCurrent")
 }
 state("NeptuniaRebirth3", "GoG")
 {
-	int SaveBlock : 0x4D7DB8;
-	string64 Cutscene : 0x4D7DB8, 0xEEC;
-	int EnemyBookSize : 0x4D7DB8, 0xB4B80;
-	int InventorySize : 0x4D7DB8, 0xC7CC;
+	int SaveBlock : 0x4F7B48;
+	string64 Cutscene : 0x4F7B48, 0xEEC;
+	int EnemyBookSize : 0x4F7B48, 0xB4B80;
+	int InventorySize : 0x4F7B48, 0xC7CC;
 }
 startup
 {
@@ -163,8 +163,8 @@ init
 		version = "GoG";
 		vars.gameConnected = true;
 	}
-	else if (modules.First().ModuleMemorySize == 11264000) {
-		print("Found and confirmed Steam Version 05.22.2018 Patch");
+	else if (modules.First().ModuleMemorySize == 11378688) {
+		print("Found and confirmed Steam Version 04.15.2019 Patch");
 		version = "SteamCurrent";
 		vars.gameConnected = true;
 	}
