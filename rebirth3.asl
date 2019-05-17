@@ -1,16 +1,16 @@
 state("NeptuniaRebirth3", "SteamCurrent")
 {
-	int SaveBlock : 0x4DD038;
-	string64 Cutscene : 0x4DD038, 0xEEC;
-	int EnemyBookSize : 0x4DD038, 0xB4B80;
-	int InventorySize : 0x4DD038, 0xC7CC;
-}
-state("NeptuniaRebirth3", "GoG")
-{
 	int SaveBlock : 0x4F7B48;
 	string64 Cutscene : 0x4F7B48, 0xEEC;
 	int EnemyBookSize : 0x4F7B48, 0xB4B80;
 	int InventorySize : 0x4F7B48, 0xC7CC;
+}
+state("NeptuniaRebirth3", "GoG")
+{
+	int SaveBlock : 0x4D7DB8;
+	string64 Cutscene : 0x4D7DB8, 0xEEC;
+	int EnemyBookSize : 0x4D7DB8, 0xB4B80;
+	int InventorySize : 0x4D7DB8, 0xC7CC;
 }
 startup
 {
