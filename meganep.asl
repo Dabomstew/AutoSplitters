@@ -4,16 +4,17 @@ state("NeptuniaVII", "SteamCurrent")
 	string64 Cutscene : 0x6F7F98, 0x348;
 	int EnemyBookSize : 0x6F7F98, 0xA0278;
 	byte TrueEndProgression : 0x6F7F98, 0x160;
+	uint EventID : 0x6F7B08, 0x24, 0x10;
 }
 startup
 {
 	print("Autosplitter loading....");
 	
-	settings.Add("startnewgame", true, "Start on New Game (requires VII Speedrun Patch)");
-	settings.SetToolTip("startnewgame", "Start on New Game select - use timer offset 0.03");
+	settings.Add("startnewgame", true, "Start on New Game");
+	settings.SetToolTip("startnewgame", "Start on New Game select - use timer offset 1.43");
 	
 	settings.Add("startngplus", false, "Start on New Game Plus");
-	settings.SetToolTip("startngplus", "Start on New Game Plus file load - use timer offset ???");
+	settings.SetToolTip("startngplus", "Start on New Game Plus Zero Dimension title input - use timer offset 1.20");
 	
 	settings.Add("killenemies", true, "Kill Enemies");
 	
@@ -112,6 +113,7 @@ startup
 	vars.gameConnected = false;
 	vars.timerJustStarted = false;
 	vars.timerStartedSinceBoot = false;
+	vars.cancelNextNGEvent = false;
 	vars.timer_OnStart = (EventHandler)((s, e) =>
 	{
 		vars.timerJustStarted = true;
@@ -120,13 +122,6 @@ startup
 
 	// offsets that can't be in state
 	vars.enemyBookData = 0xA027C;
-	
-	vars.ngHookReady = false;
-    vars.sequenceSlot = IntPtr.Zero;
-    vars.transitionSlot = IntPtr.Zero;
-    vars.sequence = new MemoryWatcher<uint>(new DeepPointer(IntPtr.Zero));
-    vars.transitionComplete = new MemoryWatcher<uint>(new DeepPointer(IntPtr.Zero, 0xD0));
-	vars.ticksTillSeed = 0;
 	
 	print("Startup complete! CREDITS: Dabomstew");
 	
@@ -138,6 +133,7 @@ shutdown
 	} catch {}
 	vars.gameConnected = false;
 	vars.timerStartedSinceBoot = false;
+	vars.cancelNextNGEvent = false;
 }
 init
 {
@@ -156,30 +152,13 @@ init
 		vars.gameConnected = false;
 	}
 	
-	vars.ngHookReady = false;
-    var proxy = modules.FirstOrDefault(x => x.ModuleName.ToLower() == "dinput8.dll");
-    if (proxy != null)
-    {
-        var scanner = new SignatureScanner(game, proxy.BaseAddress, proxy.ModuleMemorySize);
-        var marker = scanner.Scan(new SigScanTarget("56 49 49 37 4D 41 47 45"));
-        if (marker != IntPtr.Zero)
-        {
-            vars.sequenceSlot = marker + 8;
-            vars.transitionSlot = marker + 12;
-            vars.sequence = new MemoryWatcher<uint>(new DeepPointer(vars.sequenceSlot));
-            vars.transitionComplete = new MemoryWatcher<uint>(
-                new DeepPointer(vars.transitionSlot, 0xD0));
-            vars.sequence.Update(game);
-            vars.transitionComplete.Update(game);
-            vars.ngHookReady = true;
-			print("Loaded NG transition hook OK");
-        }
-    }
+	vars.cancelNextNGEvent = false;
 }
 exit
 {
 	vars.gameConnected = false;
 	vars.timerStartedSinceBoot = false;
+	vars.cancelNextNGEvent = false;
 }
 update
 {
@@ -188,11 +167,16 @@ update
 		return false;
 	}
 	
-	if(vars.timerJustStarted) {
-		if(vars.ticksTillSeed > 0) {
-			vars.ticksTillSeed -= 1;
-			return false;
+	// if we see a cutscene of Clear Data, null the next event id 1 timer start
+	try {
+		if(settings["startnewgame"] && settings["startngplus"] && current.Cutscene.Trim().Equals("Clear Data", StringComparison.InvariantCultureIgnoreCase)) {
+			//print("Arming cancel next NG event");
+			vars.cancelNextNGEvent = true;
 		}
+	}
+	catch {}
+	
+	if(vars.timerJustStarted) {
 		vars.slowRefresh = false;
 		refreshRate = 60;
 		vars.trueEndSplitsDone = new bool[256];
@@ -204,7 +188,7 @@ update
 		for(int i = 0; i < current.EnemyBookSize; i++) {
 			ushort enemyId = BitConverter.ToUInt16(enemyBook, i*8);
 			vars.initialKills[enemyId] = BitConverter.ToInt32(enemyBook, i*8 + 4);
-			print("Seeded initial kills: "+enemyId+" = "+vars.initialKills[enemyId]);
+			//print("Seeded initial kills: "+enemyId+" = "+vars.initialKills[enemyId]);
 		}
 		vars.timerJustStarted = false;
 		vars.timerStartedSinceBoot = true;
@@ -220,11 +204,6 @@ update
 		vars.multiKillSplits["kill-660-661-662-663"] = new int[] { 660, 661, 662, 663 };
 		vars.multiKillSplitsHit = new System.Collections.Generic.HashSet<string>();
 	}
-	
-	if (!vars.ngHookReady)
-        return false;
-    vars.sequence.Update(game);
-    vars.transitionComplete.Update(game);
     return true;
 }
 split
@@ -241,7 +220,7 @@ split
 		try {
 			if (!current.Cutscene.Equals(old.Cutscene) && settings[current.Cutscene.Trim()])
 			{
-				print("Split for " + current.Cutscene + " Cutscene.");
+				//print("Split for " + current.Cutscene + " Cutscene.");
 				return true;
 			}
 		} catch {}
@@ -256,10 +235,10 @@ split
 		int threshold;
 		if(!vars.killAmountOverrides.TryGetValue(enemyID, out threshold)) threshold = 1;
 		if(kills >= threshold) {
-			print("Marking "+enemyID+" as killed: "+kills+" - "+vars.initialKills[enemyID]+" vs "+BitConverter.ToInt32(enemyBook, i*8 + 4));
+			//print("Marking "+enemyID+" as killed: "+kills+" - "+vars.initialKills[enemyID]+" vs "+BitConverter.ToInt32(enemyBook, i*8 + 4));
 			vars.killedInRun[enemyID] = true;
 			if(settings["kill-"+enemyID]) {
-				print("Split for killing enemy "+enemyID+".");
+				//print("Split for killing enemy "+enemyID+".");
 				return true;
 			}
 		}
@@ -273,7 +252,7 @@ split
 				if(!vars.killedInRun[enemyId]) allKilled = false;
 			}
 			if (allKilled) {
-				print("Split for multiple kill: "+splitKey);
+				//print("Split for multiple kill: "+splitKey);
 				vars.multiKillSplitsHit.Add(splitKey);
 				return true;
 			}
@@ -283,7 +262,7 @@ split
 	// true end progression splits
 	for(int prog = 1; prog <= current.TrueEndProgression; prog++) {
 		if(settings["trueend-"+prog] && !vars.trueEndSplitsDone[prog]) {
-			print("Splitting for true end progression: "+prog);
+			//print("Splitting for true end progression: "+prog);
 			vars.trueEndSplitsDone[prog] = true;
 			return true;
 		}
@@ -292,9 +271,17 @@ split
 start
 {
 	// New Game
-	if (settings["startnewgame"] && vars.ngHookReady && vars.sequence.Current != vars.sequence.Old)
-	{
-		vars.ticksTillSeed = 120;
+	if(settings["startnewgame"] && current.EventID == 1 && old.EventID != 1) {
+		if(vars.cancelNextNGEvent) {
+			vars.cancelNextNGEvent = false;
+			return false;
+		}
+		return true;
+	}
+	
+	// New Game Plus
+	if(settings["startngplus"] && current.EventID == 10 && old.EventID != 10) {
+		vars.cancelNextNGEvent = false;
 		return true;
 	}
 }
