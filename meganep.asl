@@ -5,6 +5,7 @@ state("NeptuniaVII", "SteamCurrent")
 	int EnemyBookSize : 0x6F7F98, 0xA0278;
 	byte TrueEndProgression : 0x6F7F98, 0x160;
 	uint EventID : 0x6F7B08, 0x24, 0x10;
+	uint DungeonID : 0x706A78, 0x10;
 }
 startup
 {
@@ -108,6 +109,16 @@ startup
 	settings.Add("trueend-7", false, "Progression 6->7 (Blanc's Dream)", "trueend");
 	settings.Add("trueend-8", true, "Progression 7->8 (Vert's Dream)", "trueend");
 	
+	// Enter Dungeons
+	settings.Add("dungeons", true, "Enter Dungeons for the first time");
+	settings.Add("dungeon-701", false, "Enter Smash Box Stadium", "dungeons");
+	
+	// Trigger Events
+	settings.Add("events", true, "Split when Events Start");
+	settings.Add("event-11010", false, "Start Neptune Story", "events");
+	settings.Add("event-12010", false, "Start Noire Story", "events");
+	settings.Add("event-13010", false, "Start Blanc Story", "events");
+	settings.Add("event-14010", false, "Start Vert Story", "events");
 	
 	
 	vars.gameConnected = false;
@@ -203,6 +214,9 @@ update
 		vars.multiKillSplits["kill-780-781-782-783"] = new int[] { 780, 781, 782, 783 };
 		vars.multiKillSplits["kill-660-661-662-663"] = new int[] { 660, 661, 662, 663 };
 		vars.multiKillSplitsHit = new System.Collections.Generic.HashSet<string>();
+		
+		vars.dungeonSplitsHit = new System.Collections.Generic.HashSet<uint>();
+		vars.eventSplitsHit = new System.Collections.Generic.HashSet<uint>();
 	}
     return true;
 }
@@ -216,11 +230,35 @@ split
 	// split for cutscene
 	if (settings["cutscenes"])
 	{
-		if (!current.Cutscene.Equals(old.Cutscene)) print("Cutscene is now "+current.Cutscene);
 		try {
 			if (!current.Cutscene.Equals(old.Cutscene) && settings[current.Cutscene.Trim()])
 			{
 				//print("Split for " + current.Cutscene + " Cutscene.");
+				return true;
+			}
+		} catch {}
+	}
+	
+	// split for events
+	if (settings["events"])
+	{
+		try {
+			if (current.EventID != old.EventID) print("Saw event "+current.EventID);
+			if (current.EventID != old.EventID && settings["event-"+current.EventID] && vars.eventSplitsHit.Add(current.EventID))
+			{
+				//print("Split for " + current.EventID + " Event.");
+				return true;
+			}
+		} catch {}
+	}
+	
+	// split for dungeons
+	if(settings["dungeons"])
+	{
+		try {
+			if (current.DungeonID != old.DungeonID && settings["dungeon-"+current.DungeonID] && vars.dungeonSplitsHit.Add(current.DungeonID))
+			{
+				//print("Split for " + current.DungeonID + " Dungeon.");
 				return true;
 			}
 		} catch {}
