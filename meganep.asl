@@ -243,7 +243,7 @@ split
 	if (settings["events"])
 	{
 		try {
-			if (current.EventID != old.EventID) print("Saw event "+current.EventID);
+			//if (current.EventID != old.EventID) print("Saw event "+current.EventID);
 			if (current.EventID != old.EventID && settings["event-"+current.EventID] && vars.eventSplitsHit.Add(current.EventID))
 			{
 				//print("Split for " + current.EventID + " Event.");
