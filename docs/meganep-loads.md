@@ -50,7 +50,13 @@ host. Tests cover optional-plugin fallback, coherent 64-bit snapshots,
 short/open loads, start/reset/pause/resume, toggles, failure recovery,
 reconnect/reload, fractional ticks and existing start/split rules.
 Generated executables and extracted action code stay in ignored tests/output.
-This harness is not a full LiveSplit UI or live-game test.
+The current suite passes 78 checks, including independent-clock sampling
+jitter (ordinary polls retain the entire native cumulative delta; only the
+manual-pause boundary is clipped). Additional local validation compiled the
+ASL against actual LiveSplit ComponentUtil sources and exercised real Windows
+module discovery / ReadProcessMemory with absent, disabled, completed, open
+and faulted states in an isolated test process. This is not a full LiveSplit
+UI or live-game test.
 
 Action order and interpolation follow the
 [official ASL documentation](https://github.com/LiveSplit/LiveSplit.AutoSplitters#timer-control).

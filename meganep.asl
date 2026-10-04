@@ -138,7 +138,7 @@ startup
 	var attachedTime = timer.CurrentTime;
 	if (timer.CurrentPhase != TimerPhase.NotRunning && attachedTime.RealTime.HasValue && attachedTime.GameTime.HasValue)
 		vars.loadRemovedTicks = Math.Max(0m, (decimal)(attachedTime.RealTime.Value - attachedTime.GameTime.Value).Ticks);
-	vars.pollLoadTiming = (Action<bool>)(count =>
+	vars.pollLoadTiming = (Action<bool, bool>)((count, pauseBoundary) =>
 	{
 		lock (vars.loadLock) {
 			// Missing data drops the anchor, so recovery never deducts an unknown gap.
@@ -151,9 +151,10 @@ startup
 				if (elapsed < 0 || delta < 0 || delta > elapsed) sample = null;
 				else {
 					decimal ticks = (decimal)delta * TimeSpan.TicksPerSecond / (long)vars.loadFrequency;
-					// Cap at elapsed timer time at manual-pause boundaries. Keep sub-tick
-					// fractions until display conversion, rather than rounding each poll.
-					vars.loadRemovedTicks += Math.Min(ticks, Math.Max(0L, realTicks - (long)vars.loadSampleRealTicks));
+					// Clip only the manual-pause boundary. Per-poll clipping would
+					// permanently lose time to QPC/Real Time sampling jitter.
+					if (pauseBoundary) ticks = Math.Min(ticks, Math.Max(0L, realTicks - (long)vars.loadSampleRealTicks));
+					vars.loadRemovedTicks += ticks;
 				}
 			}
 			vars.loadSample = sample;
@@ -179,16 +180,16 @@ startup
 	{
 		vars.timerJustStarted = true;
 		vars.resetLoadTiming();
-		vars.pollLoadTiming(false);
+		vars.pollLoadTiming(false, false);
 	});
 	timer.OnStart += vars.timer_OnStart;
 	vars.timer_OnLoadPause = (EventHandler)((sender, e) =>
 	{
 		// OnPause fires after RealTime is frozen; collect only the running prefix.
-		vars.pollLoadTiming(true);
+		vars.pollLoadTiming(true, true);
 		lock (vars.loadLock) { vars.loadSample = null; vars.loadActive = false; }
 	});
-	vars.timer_OnLoadResume = (EventHandler)((sender, e) => vars.pollLoadTiming(false));
+	vars.timer_OnLoadResume = (EventHandler)((sender, e) => vars.pollLoadTiming(false, false));
 	timer.OnPause += vars.timer_OnLoadPause;
 	timer.OnResume += vars.timer_OnLoadResume;
 
@@ -331,7 +332,7 @@ update
 		return false;
 	}
 	
-	vars.pollLoadTiming(timer.CurrentPhase == TimerPhase.Running);
+	vars.pollLoadTiming(timer.CurrentPhase == TimerPhase.Running, false);
 
 	// if we see a cutscene of Clear Data, null the next event id 1 timer start
 	try {

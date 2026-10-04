@@ -30,6 +30,10 @@ public class Tests {
         Check(Tick(h, 1900, 900, 600) == 5000000, "reenabling rebases unknown interval");
         Check(Tick(h, 2000, 1000, 650) == 5500000, "reenabling counts new intervals");
 
+        h = new Harness(); h.timer.Start();
+        Tick(h, 1100, 99, 100); // Different read instants can jitter relative to Real Time.
+        Check(Tick(h, 1200, 200, 200) == 0, "cumulative loads do not lose time to per-poll clock jitter");
+
         h = new Harness(); Memory.Snapshot(5000, 1, 900, 1000); Real(h, -1430); h.timer.Start();
         Check(Tick(h, 1200, -1230, 5300) == -14300000, "start clips a preexisting load and preserves timer offset");
         h.timer.CurrentPhase = LiveSplit.Model.TimerPhase.NotRunning; h.Call("onReset"); Real(h, 0); h.timer.Start();
