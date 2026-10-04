@@ -121,7 +121,7 @@ startup
 	settings.Add("event-14010", false, "Start Vert Story", "events");
 
 	settings.Add("loadremoval", true, "Remove supported loads (optional plugin, experimental)");
-	settings.SetToolTip("loadremoval", "Requires VII Speedrun Patch LoadTiming. Current coverage: battle-entry character waits, initial dungeon map waits, and pre-control ADV script waits. Without a working plugin, timing and autosplitting continue normally.");
+	settings.SetToolTip("loadremoval", "Requires VII Speedrun Patch LoadTiming. Current coverage: battle-entry character waits, initial dungeon map waits, pre-control ADV script waits, and normal world-map resource waits. Without a working plugin, timing and autosplitting continue normally.");
 
 	// Optional VIILT001 bridge. Never gate start/split on this plugin.
 	vars.loadRoot = IntPtr.Zero;
@@ -296,9 +296,9 @@ init
 				byte[] after = memory.ReadBytes(state, 4);
 				if (data == null || data.Length != 112 || after == null || after.Length != 4) break;
 				if (sequence != BitConverter.ToUInt32(data, 0) || sequence != BitConverter.ToUInt32(after, 0)) continue;
-				// ABI 1: battle characters (1), initial dungeon map (2), ADV script (4). Reject unknown bits.
+				// ABI 1: battle characters (1), initial dungeon map (2), ADV script (4), world resources (8). Reject unknown bits.
 				uint coverage = BitConverter.ToUInt32(data, 12);
-				if (BitConverter.ToUInt32(data, 8) != 1 || coverage == 0 || (coverage & ~7u) != 0 ||
+				if (BitConverter.ToUInt32(data, 8) != 1 || coverage == 0 || (coverage & ~15u) != 0 ||
 					BitConverter.ToUInt32(data, 36) != 0) return null;
 				long frequency = BitConverter.ToInt64(data, 56);
 				long completed = BitConverter.ToInt64(data, 64);
