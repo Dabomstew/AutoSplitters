@@ -119,8 +119,9 @@ startup
 	settings.Add("event-12010", false, "Start Noire Story", "events");
 	settings.Add("event-13010", false, "Start Blanc Story", "events");
 	settings.Add("event-14010", false, "Start Vert Story", "events");
-	
-	
+
+	settings.Add("loadremoval", true, "Remove supported loads (optional plugin, experimental)");
+	settings.SetToolTip("loadremoval", "Requires VII Speedrun Patch LoadTiming. Current coverage: battle-entry character waits only. Without a working plugin, timing and autosplitting continue normally.");
 
 	// Optional VIILT001 bridge. Never gate start/split on this plugin.
 	vars.loadRoot = IntPtr.Zero;
@@ -129,6 +130,46 @@ startup
 	vars.loadFrequency = Stopwatch.Frequency;
 	vars.loadNow = (Func<long>)(() => Stopwatch.GetTimestamp());
 	vars.readLoadSample = (Func<long[]>)(() => null);
+	vars.loadLock = new object();
+	vars.loadActive = false;
+	vars.loadSampleRealTicks = 0L;
+	vars.loadRemovedTicks = 0m;
+	// Preserve the existing Game Time offset if the script is reloaded mid-run.
+	var attachedTime = timer.CurrentTime;
+	if (timer.CurrentPhase != TimerPhase.NotRunning && attachedTime.RealTime.HasValue && attachedTime.GameTime.HasValue)
+		vars.loadRemovedTicks = Math.Max(0m, (decimal)(attachedTime.RealTime.Value - attachedTime.GameTime.Value).Ticks);
+	vars.pollLoadTiming = (Action<bool>)(count =>
+	{
+		lock (vars.loadLock) {
+			// Missing data drops the anchor, so recovery never deducts an unknown gap.
+			long[] sample = vars.gameConnected && settings["loadremoval"] ? vars.readLoadSample() : null;
+			long[] previous = vars.loadSample;
+			long realTicks = (timer.CurrentTime.RealTime ?? TimeSpan.Zero).Ticks;
+			if (sample != null && previous != null && count) {
+				long delta = sample[1] - previous[1];
+				long elapsed = sample[0] - previous[0];
+				if (elapsed < 0 || delta < 0 || delta > elapsed) sample = null;
+				else {
+					decimal ticks = (decimal)delta * TimeSpan.TicksPerSecond / (long)vars.loadFrequency;
+					// Cap at elapsed timer time at manual-pause boundaries. Keep sub-tick
+					// fractions until display conversion, rather than rounding each poll.
+					vars.loadRemovedTicks += Math.Min(ticks, Math.Max(0L, realTicks - (long)vars.loadSampleRealTicks));
+				}
+			}
+			vars.loadSample = sample;
+			vars.loadSampleRealTicks = realTicks;
+			vars.loadActive = count && sample != null && sample[2] != 0;
+		}
+	});
+	vars.resetLoadTiming = (Action)(() =>
+	{
+		lock (vars.loadLock) {
+			vars.loadRemovedTicks = 0m;
+			vars.loadSample = null;
+			vars.loadActive = false;
+			timer.IsGameTimePaused = false;
+		}
+	});
 
 	vars.gameConnected = false;
 	vars.timerJustStarted = false;
@@ -137,8 +178,19 @@ startup
 	vars.timer_OnStart = (EventHandler)((s, e) =>
 	{
 		vars.timerJustStarted = true;
+		vars.resetLoadTiming();
+		vars.pollLoadTiming(false);
 	});
 	timer.OnStart += vars.timer_OnStart;
+	vars.timer_OnLoadPause = (EventHandler)((sender, e) =>
+	{
+		// OnPause fires after RealTime is frozen; collect only the running prefix.
+		vars.pollLoadTiming(true);
+		lock (vars.loadLock) { vars.loadSample = null; vars.loadActive = false; }
+	});
+	vars.timer_OnLoadResume = (EventHandler)((sender, e) => vars.pollLoadTiming(false));
+	timer.OnPause += vars.timer_OnLoadPause;
+	timer.OnResume += vars.timer_OnLoadResume;
 
 	// offsets that can't be in state
 	vars.enemyBookData = 0xA027C;
@@ -148,11 +200,15 @@ startup
 }
 shutdown
 {
+	vars.loadActive = false;
+	timer.IsGameTimePaused = false;
 	vars.readLoadSample = (Func<long[]>)(() => null);
 	vars.loadRoot = IntPtr.Zero;
 	vars.loadSample = null;
 	try {
 	timer.OnStart -= vars.timer_OnStart;
+	timer.OnPause -= vars.timer_OnLoadPause;
+	timer.OnResume -= vars.timer_OnLoadResume;
 	} catch {}
 	vars.gameConnected = false;
 	vars.timerStartedSinceBoot = false;
@@ -161,6 +217,8 @@ shutdown
 init
 {
 
+	vars.loadActive = false;
+	timer.IsGameTimePaused = false;
 	print("Game found!");
 	print("module size: " + modules.First().ModuleMemorySize);
 	vars.timerStartedSinceBoot = false;
@@ -257,6 +315,8 @@ init
 }
 exit
 {
+	vars.loadActive = false;
+	timer.IsGameTimePaused = false;
 	vars.readLoadSample = (Func<long[]>)(() => null);
 	vars.loadRoot = IntPtr.Zero;
 	vars.loadSample = null;
@@ -271,7 +331,7 @@ update
 		return false;
 	}
 	
-	vars.loadSample = vars.readLoadSample();
+	vars.pollLoadTiming(timer.CurrentPhase == TimerPhase.Running);
 
 	// if we see a cutscene of Clear Data, null the next event id 1 timer start
 	try {
@@ -416,5 +476,22 @@ start
 	if(settings["startngplus"] && current.EventID == 10 && old.EventID != 10) {
 		vars.cancelNextNGEvent = false;
 		return true;
+	}
+}
+
+onReset
+{
+	vars.resetLoadTiming();
+}
+isLoading
+{
+	// Interpolation only. gameTime below is the sole load-deduction authority.
+	return vars.gameConnected && settings["loadremoval"] && vars.loadActive;
+}
+gameTime
+{
+	if (!timer.CurrentTime.RealTime.HasValue) return null;
+	lock (vars.loadLock) {
+		return timer.CurrentTime.RealTime.Value - TimeSpan.FromTicks((long)(decimal)vars.loadRemovedTicks);
 	}
 }
