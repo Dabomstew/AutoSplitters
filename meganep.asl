@@ -121,6 +121,15 @@ startup
 	settings.Add("event-14010", false, "Start Vert Story", "events");
 	
 	
+
+	// Optional VIILT001 bridge. Never gate start/split on this plugin.
+	vars.loadRoot = IntPtr.Zero;
+	vars.loadNextScan = 0L;
+	vars.loadSample = null;
+	vars.loadFrequency = Stopwatch.Frequency;
+	vars.loadNow = (Func<long>)(() => Stopwatch.GetTimestamp());
+	vars.readLoadSample = (Func<long[]>)(() => null);
+
 	vars.gameConnected = false;
 	vars.timerJustStarted = false;
 	vars.timerStartedSinceBoot = false;
@@ -139,6 +148,9 @@ startup
 }
 shutdown
 {
+	vars.readLoadSample = (Func<long[]>)(() => null);
+	vars.loadRoot = IntPtr.Zero;
+	vars.loadSample = null;
 	try {
 	timer.OnStart -= vars.timer_OnStart;
 	} catch {}
@@ -164,9 +176,90 @@ init
 	}
 	
 	vars.cancelNextNGEvent = false;
+
+	vars.loadRoot = IntPtr.Zero;
+	vars.loadNextScan = 0L;
+	vars.loadSample = null;
+	// Capture this process only. exit/shutdown replace the delegate before reuse.
+	vars.readLoadSample = (Func<long[]>)(() =>
+	{
+		try {
+			Func<long, IntPtr> pointer = address => IntPtr.Size == 4
+				? new IntPtr(unchecked((int)address)) : new IntPtr(address);
+			if ((IntPtr)vars.loadRoot == IntPtr.Zero) {
+				long now = vars.loadNow();
+				if (now < (long)vars.loadNextScan) return null;
+				vars.loadNextScan = now + (long)vars.loadFrequency;
+				var proxy = game.ModulesWow64Safe().FirstOrDefault(m =>
+					m.ModuleName.Equals("dinput8.dll", StringComparison.OrdinalIgnoreCase));
+				if (proxy == null) return null;
+				long begin = proxy.BaseAddress.ToInt64() & 0xffffffffL;
+				long end = begin + proxy.ModuleMemorySize;
+				var hits = new List<IntPtr>();
+				// Skip discarded/no-access image pages instead of reading the whole DLL.
+				for (long address = begin; address < end; ) {
+					MemoryBasicInformation page;
+					if (WinAPI.VirtualQueryEx(game.Handle, pointer(address), out page,
+						(UIntPtr)System.Runtime.InteropServices.Marshal.SizeOf(typeof(MemoryBasicInformation))) == UIntPtr.Zero)
+						return null;
+					long stop = Math.Min(end, (page.BaseAddress.ToInt64() & 0xffffffffL) + (long)page.RegionSize);
+					if (stop <= address) return null;
+					if (page.State == MemPageState.MEM_COMMIT && ((uint)page.Protect & 0x101) == 0) {
+						var scanner = new SignatureScanner(game, pointer(address), (int)(stop - address));
+						hits.AddRange(scanner.ScanAll(new SigScanTarget("56 49 49 4C 54 30 30 31")).Take(2));
+						if (hits.Count > 1) return null;
+					}
+					address = stop;
+				}
+				if (hits.Count != 1) return null;
+				byte[] descriptor = memory.ReadBytes(hits[0], 24);
+				if (descriptor == null || descriptor.Length != 24 ||
+					BitConverter.ToUInt32(descriptor, 8) != 1 ||
+					BitConverter.ToUInt32(descriptor, 12) != 24 ||
+					BitConverter.ToUInt32(descriptor, 20) != 112) return null;
+				long root = BitConverter.ToUInt32(descriptor, 16);
+				if (root < begin || root > end - 112 || root % 8 != 0) return null;
+				vars.loadRoot = pointer(root);
+			}
+			IntPtr state = (IntPtr)vars.loadRoot;
+			for (int attempt = 0; attempt < 8; attempt++) {
+				byte[] before = memory.ReadBytes(state, 4);
+				if (before == null || before.Length != 4) break;
+				uint sequence = BitConverter.ToUInt32(before, 0);
+				if ((sequence & 1) != 0) continue;
+				byte[] data = memory.ReadBytes(state, 112);
+				long qpc = vars.loadNow();
+				byte[] after = memory.ReadBytes(state, 4);
+				if (data == null || data.Length != 112 || after == null || after.Length != 4) break;
+				if (sequence != BitConverter.ToUInt32(data, 0) || sequence != BitConverter.ToUInt32(after, 0)) continue;
+				// ABI 1 currently qualifies only battle-entry character resource waits.
+				if (BitConverter.ToUInt32(data, 8) != 1 || BitConverter.ToUInt32(data, 12) != 1 ||
+					BitConverter.ToUInt32(data, 36) != 0) return null;
+				long frequency = BitConverter.ToInt64(data, 56);
+				long completed = BitConverter.ToInt64(data, 64);
+				long opened = BitConverter.ToInt64(data, 72);
+				long observed = BitConverter.ToInt64(data, 80);
+				uint reason = BitConverter.ToUInt32(data, 16);
+				if (frequency <= 0 || frequency != (long)vars.loadFrequency || completed < 0 ||
+					observed < 0 || qpc < observed || reason > 1 || (reason != 0) != (opened != 0)) return null;
+				if (reason != 0 && (opened < 0 || opened > observed ||
+					BitConverter.ToUInt32(data, 20) == 0 || BitConverter.ToUInt32(data, 32) != 1 ||
+					qpc - observed > frequency / 2)) return null;
+				return new long[] { qpc, checked(completed + (reason != 0 ? qpc - opened : 0)), reason };
+			}
+			// Bounded retries, then fail open; reacquire a lost image on a later poll.
+			vars.loadRoot = IntPtr.Zero;
+		} catch {
+			vars.loadRoot = IntPtr.Zero;
+		}
+		return null;
+	});
 }
 exit
 {
+	vars.readLoadSample = (Func<long[]>)(() => null);
+	vars.loadRoot = IntPtr.Zero;
+	vars.loadSample = null;
 	vars.gameConnected = false;
 	vars.timerStartedSinceBoot = false;
 	vars.cancelNextNGEvent = false;
@@ -178,6 +271,8 @@ update
 		return false;
 	}
 	
+	vars.loadSample = vars.readLoadSample();
+
 	// if we see a cutscene of Clear Data, null the next event id 1 timer start
 	try {
 		if(settings["startnewgame"] && settings["startngplus"] && current.Cutscene.Trim().Equals("Clear Data", StringComparison.InvariantCultureIgnoreCase)) {
