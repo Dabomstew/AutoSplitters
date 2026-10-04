@@ -11,7 +11,7 @@ Use Game Time in LiveSplit to see load removal. The script setting
 **Remove supported loads (optional plugin, experimental)** defaults on. The
 native patch must separately have `[Patches] LoadTiming=1`; its current
 coverage is **battle-entry character resource waits and initial dungeon map
-resource waits before control**, not all game
+resource waits before control, plus pre-control ADV script waits**, not all game
 loads. Ordinary playable background spawning, cameras and ADV playback
 are not removed by this detector.
 
@@ -51,7 +51,7 @@ host. Tests cover optional-plugin fallback, coherent 64-bit snapshots,
 short/open loads, start/reset/pause/resume, toggles, failure recovery,
 reconnect/reload, fractional ticks and existing start/split rules.
 Generated executables and extracted action code stay in ignored tests/output.
-The current suite passes 85 checks, including distinct startup settings-builder
+The current suite passes 97 checks, including distinct startup settings-builder
 and runtime settings-reader types, timer callbacks before init, saved disabled
 settings and setting changes between updates. This reproduces and prevents the
 startup-builder capture error reported on 2026-10-04; the previous host combined
@@ -67,3 +67,7 @@ UI or live-game test.
 
 Action order and interpolation follow the
 [official ASL documentation](https://github.com/LiveSplit/LiveSplit.AutoSplitters#timer-control).
+
+The reader accepts known coverage/reason bits 1, 2 and 4, including their
+combined mask 7. Older partial-coverage builds remain supported; unknown bits
+are still rejected. ADV script coverage requires a matching native build.
