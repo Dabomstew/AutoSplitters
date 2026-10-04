@@ -130,6 +130,7 @@ startup
 	vars.loadFrequency = Stopwatch.Frequency;
 	vars.loadNow = (Func<long>)(() => Stopwatch.GetTimestamp());
 	vars.readLoadSample = (Func<long[]>)(() => null);
+	vars.loadRemovalEnabled = (Func<bool>)(() => false);
 	vars.loadLock = new object();
 	vars.loadActive = false;
 	vars.loadSampleRealTicks = 0L;
@@ -142,7 +143,7 @@ startup
 	{
 		lock (vars.loadLock) {
 			// Missing data drops the anchor, so recovery never deducts an unknown gap.
-			long[] sample = vars.gameConnected && settings["loadremoval"] ? vars.readLoadSample() : null;
+			long[] sample = vars.gameConnected && vars.loadRemovalEnabled() ? vars.readLoadSample() : null;
 			long[] previous = vars.loadSample;
 			long realTicks = (timer.CurrentTime.RealTime ?? TimeSpan.Zero).Ticks;
 			if (sample != null && previous != null && count) {
@@ -204,6 +205,7 @@ shutdown
 	vars.loadActive = false;
 	timer.IsGameTimePaused = false;
 	vars.readLoadSample = (Func<long[]>)(() => null);
+	vars.loadRemovalEnabled = (Func<bool>)(() => false);
 	vars.loadRoot = IntPtr.Zero;
 	vars.loadSample = null;
 	try {
@@ -217,6 +219,9 @@ shutdown
 }
 init
 {
+	// startup receives ASLSettingsBuilder; only runtime actions receive its reader.
+	// Capture the reader here so timer callbacks also see current setting values.
+	vars.loadRemovalEnabled = (Func<bool>)(() => settings["loadremoval"]);
 
 	vars.loadActive = false;
 	timer.IsGameTimePaused = false;
@@ -319,6 +324,7 @@ exit
 	vars.loadActive = false;
 	timer.IsGameTimePaused = false;
 	vars.readLoadSample = (Func<long[]>)(() => null);
+	vars.loadRemovalEnabled = (Func<bool>)(() => false);
 	vars.loadRoot = IntPtr.Zero;
 	vars.loadSample = null;
 	vars.gameConnected = false;

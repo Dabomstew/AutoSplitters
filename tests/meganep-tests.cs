@@ -74,6 +74,23 @@ public class Tests {
         }
         Check(((TimeSpan)h.Call("gameTime")).Ticks == 2, "fractional QPC conversion retains precision");
     }
+    static void SettingsLifecycle() {
+        var h = new Harness(true, false);
+        h.timer.Start(); h.timer.Pause(); h.timer.Resume();
+        Check(h.Call("update") == false, "timer callbacks before init do not access startup settings");
+        h.settings["loadremoval"] = false; h.Call("init"); h.timer.Start();
+        Check(Tick(h, 1100, 100, 100) == 1000000 && !h.timer.IsGameTimePaused,
+            "saved disabled setting is read before first update");
+        Check(Memory.StateReads == 0, "disabled setting prevents bridge reads in start callback and update");
+        h.settings["loadremoval"] = true;
+        Check(Tick(h, 1200, 200, 200) == 2000000, "runtime reader sees setting enabled after init");
+        Check(Tick(h, 1300, 300, 250) == 2500000, "enabled reader counts subsequent loads");
+        h.settings["loadremoval"] = false;
+        h.Now = 1350; Real(h, 350); Memory.Snapshot(300, 0, 0, h.Now); h.timer.Pause();
+        Check((decimal)h.vars.loadRemovedTicks == 500000m, "pause callback sees settings changed between updates");
+        h.settings["loadremoval"] = true; h.timer.Resume();
+        Check(Tick(h, 1450, 450, 350) == 3500000, "resume callback reads current runtime setting and rebases");
+    }
     static void ExistingSplits() {
         var h = new Harness(false); h.settings["startngplus"] = true;
         h.current.EventID = 10u; Check(h.Call("start") == true, "ADV NG+ without New Game bridge");
@@ -101,6 +118,7 @@ public class Tests {
         Check(h.Sample() != null, "late plugin discovery");
     }
     public static void Main() {
+        SettingsLifecycle();
         var h = new Harness(false);
         Check(h.Sample() == null, "no plugin");
         Check(h.Call("update") == true, "no plugin does not block update");

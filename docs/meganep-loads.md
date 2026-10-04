@@ -50,9 +50,15 @@ host. Tests cover optional-plugin fallback, coherent 64-bit snapshots,
 short/open loads, start/reset/pause/resume, toggles, failure recovery,
 reconnect/reload, fractional ticks and existing start/split rules.
 Generated executables and extracted action code stay in ignored tests/output.
-The current suite passes 78 checks, including independent-clock sampling
-jitter (ordinary polls retain the entire native cumulative delta; only the
-manual-pause boundary is clipped). Additional local validation compiled the
+The current suite passes 85 checks, including distinct startup settings-builder
+and runtime settings-reader types, timer callbacks before init, saved disabled
+settings and setting changes between updates. This reproduces and prevents the
+startup-builder capture error reported on 2026-10-04; the previous host combined
+both interfaces and missed that runtime failure. The polling callback now uses
+a settings-reading delegate bound in init, cleared on exit/shutdown, and safe
+before attachment. Other checks include independent-clock sampling jitter
+(ordinary polls retain the entire native cumulative delta; only the manual-pause
+boundary is clipped). Additional local validation compiled the
 ASL against actual LiveSplit ComponentUtil sources and exercised real Windows
 module discovery / ReadProcessMemory with absent, disabled, completed, open
 and faulted states in an isolated test process. This is not a full LiveSplit

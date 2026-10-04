@@ -91,11 +91,37 @@ namespace LiveSplit.ComponentUtil {
         }
     }
 }
+// LiveSplit passes a builder only to startup and a reader to runtime actions.
+// Keep these types separate: capturing the startup builder in a callback must fail.
+namespace LiveSplit.ASL {
+    public class ASLSettingsBuilder {
+        Settings settings;
+        public ASLSettingsBuilder(Settings value) { settings = value; }
+        public void Add(string id, bool enabled = true, string label = null, string parent = null) { settings.Add(id, enabled, parent); }
+        public void SetToolTip(string id, string text) { }
+    }
+    public class ASLSettingsReader {
+        Settings settings;
+        public ASLSettingsReader(Settings value) { settings = value; }
+        public bool this[string key] { get { return settings.Get(key); } }
+    }
+}
 public class Settings {
     Dictionary<string, bool> values = new Dictionary<string, bool>();
-    public bool this[string key] { get { bool value; return values.TryGetValue(key, out value) && value; } set { values[key] = value; } }
-    public void Add(string id, bool enabled = true, string label = null, string parent = null) { values[id] = enabled; }
-    public void SetToolTip(string id, string text) { }
+    Dictionary<string, string> parents = new Dictionary<string, string>();
+    public LiveSplit.ASL.ASLSettingsBuilder Builder;
+    public LiveSplit.ASL.ASLSettingsReader Reader;
+    public Settings() {
+        Builder = new LiveSplit.ASL.ASLSettingsBuilder(this);
+        Reader = new LiveSplit.ASL.ASLSettingsReader(this);
+    }
+    public bool this[string key] { get { return Get(key); } set { values[key] = value; } }
+    public bool Get(string key) {
+        bool value; string parent;
+        return values.TryGetValue(key, out value) && value &&
+            (!parents.TryGetValue(key, out parent) || parent == null || Get(parent));
+    }
+    public void Add(string id, bool enabled, string parent) { values[id] = enabled; parents[id] = parent; }
 }
 public class Harness {
     public Script script = new Script();
@@ -103,17 +129,17 @@ public class Harness {
     public dynamic vars = new ExpandoObject(), current = new ExpandoObject(), old = new ExpandoObject();
     public Settings settings = new Settings();
     public long Now = 1000;
-    public Harness(bool proxy = true) {
+    public Harness(bool proxy = true, bool initialize = true) {
         Memory.Reset(proxy);
         timer.CurrentTime = new Time { RealTime = TimeSpan.Zero };
         current.Cutscene = old.Cutscene = ""; current.EventID = old.EventID = 0u;
         current.DungeonID = old.DungeonID = 0u; current.SaveBlock = 0; current.EnemyBookSize = 0;
         current.TrueEndProgression = (byte)0;
         Call("startup"); vars.loadFrequency = 1000L; vars.loadNow = (Func<long>)(() => Now);
-        Call("init");
+        if (initialize) Call("init");
     }
     public dynamic Call(string name) {
-        try { return script.GetType().GetMethod(name).Invoke(script, new object[] { timer, old, current, vars, Process.GetCurrentProcess(), settings }); }
+        try { return script.GetType().GetMethod(name).Invoke(script, new object[] { timer, old, current, vars, Process.GetCurrentProcess(), name == "startup" ? (object)settings.Builder : settings.Reader }); }
         catch (System.Reflection.TargetInvocationException e) { throw e.InnerException; }
     }
     public long[] Sample() { return vars.readLoadSample(); }
