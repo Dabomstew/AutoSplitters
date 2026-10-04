@@ -140,7 +140,7 @@ public class Tests {
         Reject(() => Memory.U32(Memory.Root + 8, 0), "disabled plugin");
         Reject(() => Memory.U32(Memory.Root + 8, 2), "faulted plugin");
         Reject(() => Memory.U32(Memory.Root + 36, 4), "fault code");
-        Reject(() => Memory.U32(Memory.Root + 12, 32), "unknown coverage");
+        Reject(() => Memory.U32(Memory.Root + 12, 64), "unknown coverage");
         Reject(() => Memory.I64(Memory.Root + 56, 1), "wrong QPC frequency");
         Reject(() => Memory.Snapshot(0, 1, 1, 100), "stale active state");
         Reject(() => { Memory.Snapshot(0, 1, 500, 1000); Memory.U32(Memory.Root + 32, 0); }, "unfocused active state");
@@ -154,7 +154,7 @@ public class Tests {
         h = new Harness(); h.Sample(); Memory.Bytes.Remove(Memory.Root);
         Check(h.Sample() == null && h.Call("update") == true, "unreadable root fails open");
         h.Call("exit"); Check(h.Sample() == null, "process exit drops reader");
-        foreach (uint coverage in new uint[] { 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 }) {
+        for (uint coverage = 1; coverage <= 63; ++coverage) {
             h = new Harness(); h.Now = 2000; Memory.Snapshot(200, coverage, 1500, 1900);
             Memory.U32(Memory.Root + 12, coverage);
             Check(h.Sample()[1] == 700 && h.Sample()[2] == coverage, "known load-reason union mask");
