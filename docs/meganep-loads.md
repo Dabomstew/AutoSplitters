@@ -10,7 +10,8 @@ Game Time keeps advancing, and normal starts and splits remain available.
 Use Game Time in LiveSplit to see load removal. The script setting
 **Remove supported loads (optional plugin, experimental)** defaults on. The
 native patch must separately have `[Patches] LoadTiming=1`; its current
-coverage is **battle-entry character resource waits only**, not all game
+coverage is **battle-entry character resource waits and initial dungeon map
+resource waits before control**, not all game
 loads. Ordinary playable background spawning, cameras and ADV playback
 are not removed by this detector.
 
