@@ -9,14 +9,17 @@ Game Time keeps advancing, and normal starts and splits remain available.
 
 Use Game Time in LiveSplit to see load removal. The script setting
 **Remove supported loads (optional plugin, experimental)** defaults on. The
-native patch must separately have `[Patches] LoadTiming=1`; its current
+current native patch always supplies load timing; its current
 coverage is **battle-entry character resource waits and initial dungeon map
-resource waits before control, pre-control ADV script waits, normal world-map
-resource waits, and required synchronous title movie setup**. Coverage is partial. Ordinary playable background spawning, cameras and ADV playback
+resource waits before control, pre-control ADV script and blocked resource-queue
+waits, normal world-map resource waits, required synchronous title movie setup,
+and load-list metadata calls**. Coverage is partial. Ordinary playable background spawning, cameras and ADV playback
 are not removed by this detector.
 
-The optional native `[LoadTiming] FPSUnlock=1` uses the same detector and
-needs no ASL change. The ASL only reads memory; it never changes the FPS
+The optional native `[Patches] UnlockFPSDuringLoads=1` uses the same detector,
+including ADV queue waits. Load removal works with this option off and needs
+no separate queue setting. Older plugin builds may still require their
+`[Patches] LoadTiming=1` toggle. The ASL only reads memory; it never changes the FPS
 setting, game memory or the installed patch.
 
 ## Timing and recovery
@@ -68,9 +71,14 @@ UI or live-game test.
 Action order and interpolation follow the
 [official ASL documentation](https://github.com/LiveSplit/LiveSplit.AutoSplitters#timer-control).
 
-The reader accepts known coverage/reason bits 1, 2, 4, 8 and 16, including
-combined mask 31. These cover battle-entry characters, initial dungeon maps,
-ADV script preparation, normal world-map resources and required synchronous
-title movie setup. Older partial-coverage builds remain supported; unknown
+The reader accepts known coverage/reason bits 1, 2, 4, 8, 16 and 32, including
+combined mask 63. These cover battle-entry characters, initial dungeon maps,
+ADV script preparation and blocked resource queues, normal world-map resources,
+required synchronous title movie setup and load-list metadata.
+Older partial-coverage builds remain supported; unknown
 bits are still rejected. Title first-frame delivery, playback, UI finalization
 and fixed transitions remain counted. Each reason requires a matching native build.
+
+The current suite passes 156 checks, including open and completed ADV queue
+loads with native FPS unlock off. The queue uses existing reason 4 and the
+same cumulative counter, so no reader or timing algorithm change is needed.

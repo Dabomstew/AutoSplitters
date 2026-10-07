@@ -7,8 +7,9 @@ public class Tests {
     static void Real(Harness h, long milliseconds) {
         var time = h.timer.CurrentTime; time.RealTime = TimeSpan.FromMilliseconds(milliseconds); h.timer.CurrentTime = time;
     }
-    static long Tick(Harness h, long qpc, long realMilliseconds, long completed, uint reason = 0, long opened = 0) {
+    static long Tick(Harness h, long qpc, long realMilliseconds, long completed, uint reason = 0, long opened = 0, uint coverage = 1) {
         h.Now = qpc; Real(h, realMilliseconds); Memory.Snapshot(completed, reason, opened, qpc);
+        Memory.U32(Memory.Root + 12, coverage);
         h.Call("update"); h.timer.IsGameTimePaused = (bool)h.Call("isLoading");
         TimeSpan result = h.Call("gameTime");
         var time = h.timer.CurrentTime; time.GameTime = result; h.timer.CurrentTime = time;
@@ -164,6 +165,12 @@ public class Tests {
         Reject(() => { Memory.Snapshot(0, 8, 500, 1000); Memory.U32(Memory.Root + 12, 7); }, "unknown reason");
         ExistingSplits();
         Timing();
+        var queue = new Harness(); queue.timer.Start();
+        Memory.U32(Memory.Root + 40, 0); // Native FPS request is off.
+        Check(Tick(queue, 1500, 500, 0, 4, 1200, 63) == 2000000 && queue.timer.IsGameTimePaused,
+              "ADV queue reason removes open load with FPS unlock off");
+        Check(Tick(queue, 1600, 600, 300, 0, 0, 63) == 3000000 && !queue.timer.IsGameTimePaused,
+              "completed ADV queue load retained after resume");
         Console.WriteLine("PASS: " + passed + " Megadimension ASL checks");
     }
 }

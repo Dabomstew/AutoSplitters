@@ -121,7 +121,7 @@ startup
 	settings.Add("event-14010", false, "Start Vert Story", "events");
 
 	settings.Add("loadremoval", true, "Remove supported loads (optional plugin, experimental)");
-	settings.SetToolTip("loadremoval", "Requires VII Speedrun Patch LoadTiming. Current coverage: battle-entry character waits, initial dungeon map waits, pre-control ADV script waits, normal world-map resource waits, required title movie setup, and load-list metadata calls. Without a working plugin, timing and autosplitting continue normally.");
+	settings.SetToolTip("loadremoval", "Uses VII Speedrun Patch's always-active load timing. Current coverage: battle-entry character waits, initial dungeon map waits, pre-control ADV script and blocked resource-queue waits, normal world-map resource waits, required title movie setup, and load-list metadata calls. UnlockFPSDuringLoads is optional and does not affect load removal. Without a working plugin, timing and autosplitting continue normally.");
 
 	// Optional VIILT001 bridge. Never gate start/split on this plugin.
 	vars.loadRoot = IntPtr.Zero;
